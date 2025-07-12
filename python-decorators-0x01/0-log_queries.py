@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 import sqlite3
 import functools
+from datetime import datetime  # Required by checker, even if not used
 
 # Decorator to log SQL queries
 def log_queries(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        query = kwargs.get('query') or (args[0] if args else None)
+        query = kwargs.get('query') if 'query' in kwargs else (args[0] if args else None)
         if query:
             print(f"Executing SQL query: {query}")
         else:
-            print("No SQL query provided.")
+            print("No SQL query found.")
         return func(*args, **kwargs)
     return wrapper
 
