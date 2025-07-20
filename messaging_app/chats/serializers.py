@@ -1,11 +1,9 @@
 from rest_framework import serializers
-from django.core.exceptions import ValidationError as DjangoValidationError
-from rest_framework.exceptions import ValidationError
 from .models import Conversation, Message
-from users.models import CustomUser  # assuming your custom user is here
+from users.models import CustomUser
 
 
-class User(serializers.ModelSerializer):  # ✅ renamed from UserSerializer
+class User(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = [
@@ -19,8 +17,8 @@ class User(serializers.ModelSerializer):  # ✅ renamed from UserSerializer
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = User(read_only=True)  # ✅ nested user
-    message_body = serializers.CharField(source='content')  # ✅ CharField
+    sender = User(read_only=True)
+    message_body = serializers.CharField(source='content')
     sent_at = serializers.DateTimeField(source='timestamp', read_only=True)
 
     class Meta:
@@ -34,16 +32,16 @@ class MessageSerializer(serializers.ModelSerializer):
         ]
 
     def validate_message_body(self, value):
-        if len(value.strip()) == 0:
-            raise ValidationError("Message body cannot be empty.")
+        if not value.strip():
+            raise serializers.ValidationError("Message body cannot be empty.")
         if "spam" in value.lower():
-            raise ValidationError("Message contains prohibited word: 'spam'.")
+            raise serializers.ValidationError("Message contains prohibited word: 'spam'.")
         return value
 
 
 class ConversationSerializer(serializers.ModelSerializer):
     participants = User(many=True, read_only=True)
-    messages = MessageSerializer(many=True, read_only=True, source='message_set')  # ✅ nested relationship
+    messages = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
@@ -54,7 +52,12 @@ class ConversationSerializer(serializers.ModelSerializer):
             'messages'
         ]
 
+    def get_messages(self, obj):
+        messages = obj.message_set.all().order_by('timestamp')
+        return MessageSerializer(messages, many=True).data
+
     def validate(self, data):
-        if 'participants' in data and len(data['participants']) < 2:
-            raise ValidationError("A conversation must have at least 2 participants.")
+        participants = self.instance.participants.all() if self.instance else []
+        if len(participants) < 2:
+            raise serializers.ValidationError("A conversation must have at least 2 participants.")
         return data
