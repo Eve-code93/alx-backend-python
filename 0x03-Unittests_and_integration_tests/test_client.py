@@ -2,11 +2,11 @@
 """
 Unittest for client.py
 """
-
 import unittest
 from unittest.mock import patch, PropertyMock
 from parameterized import parameterized
 from client import GithubOrgClient
+from fixtures import TEST_PAYLOAD
 
 
 class TestGithubOrgClient(unittest.TestCase):
@@ -36,7 +36,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
     @patch('client.get_json')
     def test_public_repos(self, mock_get_json):
-        """Test public_repos returns expected data"""
+        """Test public_repos returns expected repo names"""
         mock_get_json.return_value = [
             {"name": "repo1"},
             {"name": "repo2"},
@@ -49,6 +49,22 @@ class TestGithubOrgClient(unittest.TestCase):
             mock_url.assert_called_once()
             mock_get_json.assert_called_once_with("http://example.com/orgs/testorg/repos")
 
+    @patch('client.get_json')
+    def test_public_repos_with_license(self, mock_get_json):
+        """Test public_repos with license filtering"""
+        mock_get_json.return_value = [
+            {"name": "repo1", "license": {"key": "apache-2.0"}},
+            {"name": "repo2", "license": {"key": "mit"}},
+            {"name": "repo3", "license": {"key": "apache-2.0"}},
+        ]
+        with patch.object(GithubOrgClient, "_public_repos_url", new_callable=PropertyMock) as mock_url:
+            mock_url.return_value = "http://example.com/orgs/testorg/repos"
+            client = GithubOrgClient("testorg")
+            result = client.public_repos(license="apache-2.0")
+            self.assertEqual(result, ["repo1", "repo3"])
+            mock_url.assert_called_once()
+            mock_get_json.assert_called_once_with("http://example.com/orgs/testorg/repos")
+
     @parameterized.expand([
         ({"license": {"key": "my_license"}}, "my_license", True),
         ({"license": {"key": "other_license"}}, "my_license", False),
@@ -57,15 +73,6 @@ class TestGithubOrgClient(unittest.TestCase):
         """Test has_license returns expected boolean"""
         result = GithubOrgClient.has_license(repo, license_key)
         self.assertEqual(result, expected)
-
-
-class MockResponse:
-    """Mock response for integration tests"""
-    def __init__(self, payload):
-        self._payload = payload
-
-    def json(self):
-        return self._payload
 
 
 if __name__ == "__main__":
