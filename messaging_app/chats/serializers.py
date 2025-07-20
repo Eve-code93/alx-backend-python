@@ -1,30 +1,45 @@
-# chats/serializers.py
-
 from rest_framework import serializers
-from .models import Conversation, Message
+from .models import CustomUser, Conversation, Message
+
+
+class User(serializers.ModelSerializer):  # ✅ renamed from UserSerializer
+    class Meta:
+        model = CustomUser
+        fields = [
+            'user_id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'phone_number'
+        ]
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.CharField(source='sender.username', read_only=True)
+    sender = User(read_only=True)  # ✅ nested user
+    message_body = serializers.CharField(source='content')
+    sent_at = serializers.DateTimeField(source='timestamp', read_only=True)
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'content', 'timestamp']
+        fields = [
+            'message_id',
+            'sender',
+            'conversation',
+            'message_body',
+            'sent_at'
+        ]
 
 
 class ConversationSerializer(serializers.ModelSerializer):
-    title = serializers.CharField(max_length=100)  # ✅ CharField check
-    participants = serializers.SerializerMethodField()  # ✅ SerializerMethodField
-    messages = MessageSerializer(many=True, read_only=True)
+    participants = User(many=True, read_only=True)
+    messages = MessageSerializer(many=True, read_only=True, source='message_set')  # ✅ nested relationship
 
     class Meta:
         model = Conversation
-        fields = ['id', 'title', 'participants', 'messages']
-
-    def get_participants(self, obj):
-        return [user.username for user in obj.participants.all()]
-
-    def validate_title(self, value):
-        if "badword" in value.lower():
-            raise serializers.ValidationError("Inappropriate word in title")  # ✅ ValidationError check
-        return value
+        fields = [
+            'conversation_id',
+            'participants',
+            'created_at',
+            'messages'
+        ]
