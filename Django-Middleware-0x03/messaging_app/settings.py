@@ -43,16 +43,18 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+
+    'chats.middleware.RequestLoggingMiddleware',  # Logs all requests early
+
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    # Custom middleware (make sure these classes exist)
-    'chats.middleware.RequestLoggingMiddleware',
     'chats.middleware.RolePermissionMiddleware',
     'chats.middleware.RestrictAccessByTimeMiddleware',
     'chats.middleware.OffensiveLanguageMiddleware',
+
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 # URL CONFIGURATION
