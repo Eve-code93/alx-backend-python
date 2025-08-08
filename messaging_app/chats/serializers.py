@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Conversation, Message
-from users.models import CustomUser
+from .models import CustomUser
 
 
 class User(serializers.ModelSerializer):
