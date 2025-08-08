@@ -1,90 +1,87 @@
-# chats/middleware.py
-
 from datetime import datetime, timedelta
-from django.http import JsonResponse
-from django.utils.timezone import now
-from collections import defaultdict
-import logging
+from rest_framework import status
+from rest_framework.response import Response
 
-# Set up logging to a file
-logging.basicConfig(
-    filename='requests.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s',
-)
 
-# Task 1: Logging User Requests
 class RequestLoggingMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        user = request.user if request.user.is_authenticated else 'Anonymous'
-        logging.info(f"{datetime.now()} - User: {user} - Path: {request.path}")
-        return self.get_response(request)
+        user = request.user if request.user.is_authenticated else 'anonymous'
+        log_entry = f"{datetime.now()} - User: {user} - Path: {request.path}"
+        with open('request.log', 'a') as log_file:
+            log_file.write(log_entry)
+        response = self.get_response(request)
+        return response
 
 
-# Task 2: Restrict Chat Access by Time
 class RestrictAccessByTimeMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Allow only between 6PM and 9PM (18 - 21 hours)
         current_hour = datetime.now().hour
+        # Allow access only between 18 (6PM) and 21 (9PM)
         if not (18 <= current_hour < 21):
-            return JsonResponse(
-                {"error": "Chat access allowed only between 6PM and 9PM"},
-                status=403
-            )
-        return self.get_response(request)
+            return Response({'Error:'}, status=status.HTTP_403_FORBIDDEN)
+        response = self.get_response(request)
+        return response
 
 
-# Task 3: Rate Limiting by IP (5 messages/minute)
 class OffensiveLanguageMiddleware:
+    message_counts = []
+
     def __init__(self, get_response):
         self.get_response = get_response
-        self.message_log = defaultdict(list)  # {ip: [timestamp, ...]}
 
     def __call__(self, request):
-        if request.method == "POST" and "/messages/" in request.path:
+        # for only post request
+        if request.method == 'POST':
             ip = self.get_client_ip(request)
-            now_time = now()
-            self.message_log[ip] = [
-                timestamp for timestamp in self.message_log[ip]
-                if now_time - timestamp < timedelta(minutes=1)
-            ]
+            now = datetime.now()
+            window_start = now - timedelta(minutes=1)
 
-            if len(self.message_log[ip]) >= 5:
-                return JsonResponse(
-                    {"error": "Rate limit exceeded. Max 5 messages per minute."},
-                    status=429
-                )
+            # clean old entries
+            if ip in self.message_counts:
+                self.message_counts[ip] = [
+                    t for t in self.message_counts[ip] if t > window_start
+                ]
+            else:
+                self.message_counts[ip] = []
 
-            self.message_log[ip].append(now_time)
+            # check limit
+            if len(self.message_counts[ip]) >= 5:
+                return Response({'Error: request too many times'},
+                                status=status.HTTP_403_FORBIDDEN)
 
-        return self.get_response(request)
+            # Record the message
+            self.message_counts[ip].append(now)
+
+        response = self.get_response(request)
+        return response
 
     def get_client_ip(self, request):
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            return x_forwarded_for.split(',')[0]
-        return request.META.get('REMOTE_ADDR')
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
 
 
-# Task 4: Role-Based Permissions
-class RolePermissionMiddleware:
+class RolepermissionMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Apply only to protected admin/moderator routes
-        protected_paths = ['/api/conversations/', '/api/messages/']
-        if any(request.path.startswith(p) for p in protected_paths):
-            user = request.user
-            if not user.is_authenticated or user.role not in ['admin', 'moderator']:
-                return JsonResponse(
-                    {"error": "Permission denied. Only admin or moderator allowed."},
-                    status=403
-                )
-        return self.get_response(request)
+        user = getattr(request, 'user', None)
+        # Check if user is authenticated and has a role attribute
+        if not user or not user.is_authenticated:
+            return Response({'Error: Not authorised'},
+                            status=status.HTTP_403_FORBIDDEN)
+        # allow Admin or Moderator
+        if getattr(user, 'role', None) not in ['admin', 'moderator']:
+            return Response({'Error'}, status=status.HTTP_403_FORBIDDEN)
+        response = self.get_response(request)
+        return response
