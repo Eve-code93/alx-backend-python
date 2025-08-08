@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     # Local apps
     'chats',
 
-    # Third-party
+    # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
@@ -47,9 +47,15 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # Custom middleware (make sure these classes exist)
+    'chats.middleware.RequestLoggingMiddleware',
+    'chats.middleware.RolePermissionMiddleware',
+    'chats.middleware.RestrictAccessByTimeMiddleware',
+    'chats.middleware.OffensiveLanguageMiddleware',
 ]
 
-# URL CONFIG
+# URL CONFIGURATION
 ROOT_URLCONF = 'messaging_app.urls'
 
 # TEMPLATES
@@ -79,8 +85,8 @@ DATABASES = {
     }
 }
 
-# AUTHENTICATION
-AUTH_USER_MODEL = 'chats.CustomUser'  # ✅ Use only one AUTH_USER_MODEL
+# CUSTOM USER MODEL
+AUTH_USER_MODEL = 'chats.CustomUser'
 
 # REST FRAMEWORK CONFIGURATION
 REST_FRAMEWORK = {
@@ -99,8 +105,6 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-
-   
 }
 
 # PASSWORD VALIDATORS
@@ -120,5 +124,5 @@ USE_TZ = True
 # STATIC FILES
 STATIC_URL = 'static/'
 
-# DEFAULT PRIMARY KEY
+# DEFAULT PRIMARY KEY FIELD TYPE
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
