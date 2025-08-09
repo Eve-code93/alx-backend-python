@@ -1,11 +1,10 @@
-# messaging/views.py
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_page
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.db.models import Q
-
 from .models import Message
+
 
 def _gather_thread(root_message):
     """
@@ -21,6 +20,7 @@ def _gather_thread(root_message):
             ]
         }
     return recurse(root_message)
+
 
 @login_required
 @cache_page(60)  # cache this view for 60 seconds
@@ -44,6 +44,7 @@ def conversation_view(request, other_username):
         'messages': messages,
         'other': other,
     })
+
 
 @login_required
 def send_message_view(request):
@@ -84,6 +85,7 @@ def send_message_view(request):
 
     return JsonResponse({'status': 'ok', 'message_id': msg.pk})
 
+
 @login_required
 def threaded_view(request, msg_id):
     """
@@ -98,13 +100,16 @@ def threaded_view(request, msg_id):
     thread = _gather_thread(root)
     return render(request, 'messaging/threaded.html', {'thread': thread})
 
+
 @login_required
 def unread_messages_view(request):
     """
     Use the custom manager to fetch only unread messages for user.
+    Optimized with .only()
     """
-    msgs = Message.unread.for_user(request.user).select_related('sender', 'receiver')
+    msgs = Message.unread.unread_for_user(request.user)  # ✅ required format
     return render(request, 'messaging/unread.html', {'messages': msgs})
+
 
 @login_required
 def delete_user_view(request):

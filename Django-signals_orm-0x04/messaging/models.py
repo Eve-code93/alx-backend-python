@@ -1,13 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from .managers import UnreadMessagesManager
 
-class UnreadMessagesManager(models.Manager):
-    def for_user(self, user):
-        return self.get_queryset().filter(
-            receiver=user,
-            read=False
-        ).only('id', 'sender', 'receiver', 'content', 'timestamp')
 
 class Message(models.Model):
     sender = models.ForeignKey(
@@ -23,7 +18,7 @@ class Message(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     edited = models.BooleanField(default=False)
-    read = models.BooleanField(default=False)
+    read = models.BooleanField(default=False)  # ✅ Required field
     parent_message = models.ForeignKey(
         'self',
         null=True,
@@ -33,7 +28,7 @@ class Message(models.Model):
     )
 
     objects = models.Manager()
-    unread = UnreadMessagesManager()
+    unread = UnreadMessagesManager()  # ✅ Custom manager
 
     class Meta:
         ordering = ['-timestamp']
@@ -41,6 +36,7 @@ class Message(models.Model):
     def __str__(self):
         snippet = (self.content[:40] + '...') if len(self.content) > 40 else self.content
         return f"#{self.pk} {self.sender} → {self.receiver}: {snippet}"
+
 
 class MessageHistory(models.Model):
     message = models.ForeignKey(Message, related_name='history', on_delete=models.CASCADE)
@@ -52,6 +48,7 @@ class MessageHistory(models.Model):
 
     def __str__(self):
         return f"History for Message #{self.message_id} at {self.edited_at}"
+
 
 class Notification(models.Model):
     user = models.ForeignKey(
