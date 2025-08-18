@@ -5,7 +5,7 @@ services:
     image: mysql:8
     restart: always
     environment:
-      MYSQL_DATABASE: messaging_db
+      MYSQL_DB: messaging_db
       MYSQL_USER: user
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: rootpassword
@@ -16,7 +16,7 @@ services:
 
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python3 manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
@@ -24,7 +24,7 @@ services:
     depends_on:
       - db
     environment:
-      MYSQL_DATABASE: messaging_db
+      MYSQL_DB: messaging_db
       MYSQL_USER: user
       MYSQL_PASSWORD: password
       MYSQL_HOST: db
