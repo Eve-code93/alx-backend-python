@@ -35,7 +35,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/mnt/c/Users/USER/alxprodev/alx-backend-python/messaging_app/venv"
+VIRTUAL_ENV="/mnt/c/Users/USER/alxprodev/alx-backend-python/Django-signals_orm-0x04/venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

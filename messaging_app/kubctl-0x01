@@ -7,3 +7,6 @@ kubectl get pods
 
 # Monitor resource usage
 kubectl top pods
+
+# Run load testing with wrk (adjust duration/threads/connections as needed)
+wrk -t2 -c50 -d30s http://$(minikube ip):8000/
