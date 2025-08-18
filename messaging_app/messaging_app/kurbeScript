@@ -1,0 +1,9 @@
+#!/bin/bash
+# Start Minikube
+minikube start
+
+# Verify cluster info
+kubectl cluster-info
+
+# Get pods across all namespaces
+kubectl get pods --all-namespaces

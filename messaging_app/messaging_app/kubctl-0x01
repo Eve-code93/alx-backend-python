@@ -1,0 +1,9 @@
+#!/bin/bash
+# Scale to 3 replicas
+kubectl scale deployment messaging-app --replicas=3
+
+# Verify pods
+kubectl get pods
+
+# Monitor resource usage
+kubectl top pods

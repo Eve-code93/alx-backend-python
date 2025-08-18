@@ -1,0 +1,12 @@
+#!/bin/bash
+# Apply rolling update
+kubectl apply -f blue_deployment.yaml
+
+# Monitor rollout
+kubectl rollout status deployment/messaging-app-blue
+
+# Continuous curl to check downtime
+while true; do
+  curl -s http://$(minikube ip):8000/ || echo "App not reachable"
+  sleep 2
+done
