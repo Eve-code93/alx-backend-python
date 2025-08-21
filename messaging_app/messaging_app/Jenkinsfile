@@ -3,6 +3,7 @@ pipeline {
     tools {
         python 'Python3'
     }
+
     stages {
         stage('Checkout') {
             steps {
@@ -11,11 +12,13 @@ pipeline {
                     credentialsId: 'github-creds'
             }
         }
+
         stage('Install dependencies') {
             steps {
                 sh 'pip install -r messaging_app/requirements.txt'
             }
         }
+
         stage('Run tests') {
             steps {
                 sh 'pytest messaging_app --junitxml=report.xml'
@@ -26,13 +29,13 @@ pipeline {
                 }
             }
         }
-    }
-}
+
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t eve93/messaging_app:latest messaging_app'
             }
         }
+
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -41,3 +44,6 @@ pipeline {
                 }
             }
         }
+    }
+}
+
