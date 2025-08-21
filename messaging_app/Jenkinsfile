@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+    tools {
+        python 'Python3'
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'master',
+                    url: 'https://github.com/Eve-code93/alx-backend-python.git',
+                    credentialsId: 'github-creds'
+            }
+        }
+        stage('Install dependencies') {
+            steps {
+                sh 'pip install -r messaging_app/requirements.txt'
+            }
+        }
+        stage('Run tests') {
+            steps {
+                sh 'pytest messaging_app --junitxml=report.xml'
+            }
+            post {
+                always {
+                    junit 'report.xml'
+                }
+            }
+        }
+    }
+}
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t eve93/messaging_app:latest messaging_app'
+            }
+        }
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'docker push eve93/messaging_app:latest'
+                }
+            }
+        }
